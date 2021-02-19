@@ -1,0 +1,6 @@
+requests
+wheel
+pickle-mixin
+numpy
+pandas
+boto3

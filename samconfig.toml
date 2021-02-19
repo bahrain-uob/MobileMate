@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "posemate-latest-api"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1keurlc6m5okf"
+s3_prefix = "posemate-latest-api"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
