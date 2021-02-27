@@ -1,5 +1,5 @@
-AWS.config.region = '<Add your region>'; // Region
-AWS.config.credentials = new AWS.CognitoIdentityCredentials({IdentityPoolId: '<Add your Cognito Unauth credentials>',});
+AWS.config.region = '<REGION>';
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({IdentityPoolId: '<COGNITO UNAUTH IDENTITY CREDENTIALS>',});
 var lambda = new AWS.Lambda();
 
 var keyFrames = [];
@@ -65,7 +65,7 @@ function onResults(results) {
     var payload = JSON.stringify(JSON.stringify(input));
 
     lambda.invoke({
-      FunctionName: '<Add your function name>',
+      FunctionName: '<LAMBDA FUNCTION NAME>',
       Payload: payload
       }, function(err, data) {
       if (err) {
