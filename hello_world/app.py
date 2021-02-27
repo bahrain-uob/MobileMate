@@ -6,7 +6,8 @@ import math
 import pandas as pd
 import numpy as np
 
-ENDPOINT_NAME = 'xgboost-endpoint'
+# Model endpoint name
+ENDPOINT_NAME = ''
 runtime= boto3.client('runtime.sagemaker')
 
 
@@ -21,11 +22,8 @@ connections = [
 
 
 labels = {
-            "0" : "A", "1" : "B", "2" : "C", "3" : "D", "4" : "E",
-            "5" : "F", "6" : "G", "7" : "H", "8" : "I", "9" : "K",
-            "10" : "L", "11" : "M", "12" : "N", "13" : "O", "14" : "P",
-            "15" : "Q", "16" : "R", "17" : "S", "18" : "T", "19" : "U",
-            "20" : "V", "21" : "W", "22" : "X", "23" : "Y"
+            "0" : "me", "1" : "you", "2" : "hello", "3" : "good", "4" : "how",
+            "5" : "university", "6" : "welcome", "7" : "people"
         }
 
 def generatePointVectors(rightPoints, leftPoints, previousFrames):
@@ -286,7 +284,8 @@ def recalculateFrames(frames):
     cycledFrames = cycledFrames[24:]
     return cycledFrames
 
-def predict(frames):
+def preprocessData(frames):
+    
     dataToProcess = []
     dataToProcess.extend(frames)
     if(len(dataToProcess) != 96):
@@ -301,18 +300,80 @@ def predict(frames):
             dataToProcess.extend(null_24)
         else:
             print("Error in preprocessData. Length of dataToProcess: ", len(dataToProcess))
-    # Convert values to DMatrix format
-    
-    df = pd.DataFrame(dataToProcess)
-    df_T = df.T
-    csv_data = df_T.to_csv(None, header=False, index=False)
-    response = runtime.invoke_endpoint(EndpointName=ENDPOINT_NAME, ContentType='text/csv', Body=csv_data)
-    result = json.loads(response['Body'].read().decode())
-    max_prob = np.amax(result)
-    pred_label_idx = np.argmax(result, axis=0)
-    out_label = labels["{}".format(pred_label_idx)]
-    return out_label
 
+    group_0 = []
+    group_0.extend(dataToProcess[:24])
+    group_0.extend(null_24)
+    group_0.extend(null_24)
+    group_0.extend(null_24)
+
+    group_1 = []
+    group_1.extend(dataToProcess[:48])
+    group_1.extend(null_24)
+    group_1.extend(null_24)
+
+    group_2 = []
+    group_2.extend(dataToProcess[:72])
+    group_2.extend(null_24)
+
+    group_3 = []
+    group_3.extend(dataToProcess[:96])
+
+    return group_0 , group_1, group_2, group_3
+
+def predict(set0,set1,set2,set3):
+    # Convert values to DMatrix format
+    df0 = pd.DataFrame(set0)
+    df_T0 = df0.T
+    csv_data0 = df_T0.to_csv(None, header=False, index=False)
+    response0 = runtime.invoke_endpoint(EndpointName=ENDPOINT_NAME, ContentType='text/csv', Body=csv_data0)
+    result0 = json.loads(response0['Body'].read().decode())
+    
+    df1 = pd.DataFrame(set1)
+    df_T1 = df1.T
+    csv_data1 = df_T1.to_csv(None, header=False, index=False)
+    response1 = runtime.invoke_endpoint(EndpointName=ENDPOINT_NAME, ContentType='text/csv', Body=csv_data1)
+    result1 = json.loads(response1['Body'].read().decode())
+    
+    df2 = pd.DataFrame(set2)
+    df_T2 = df2.T
+    csv_data2 = df_T2.to_csv(None, header=False, index=False)
+    response2 = runtime.invoke_endpoint(EndpointName=ENDPOINT_NAME, ContentType='text/csv', Body=csv_data2)
+    result2 = json.loads(response2['Body'].read().decode())
+    
+    df3 = pd.DataFrame(set3)
+    df_T3 = df3.T
+    csv_data3 = df_T3.to_csv(None, header=False, index=False)
+    response3 = runtime.invoke_endpoint(EndpointName=ENDPOINT_NAME, ContentType='text/csv', Body=csv_data3)
+    result3 = json.loads(response3['Body'].read().decode())
+    
+    
+    max_prob_0 = np.amax(result0)
+    max_prob_1 = np.amax(result1)
+    max_prob_2 = np.amax(result2)
+    max_prob_3 = np.amax(result3)
+
+
+
+    out_label_0 = labels["{}".format(np.argmax(result0, axis=0))]
+    out_label_1 = labels["{}".format(np.argmax(result1, axis=0))]
+    out_label_2 = labels["{}".format(np.argmax(result2, axis=0))]
+    out_label_3 = labels["{}".format(np.argmax(result3, axis=0))]
+    
+    tempmaxprob = max_prob_0
+    final_label = out_label_0
+    if(tempmaxprob < max_prob_1 and max_prob_1 > max_prob_2 and max_prob_1 > max_prob_3):
+        tempmaxprob = max_prob_1
+        final_label = out_label_1
+    elif(tempmaxprob < max_prob_2 and max_prob_2 > max_prob_1 and max_prob_2 > max_prob_3):
+        tempmaxprob = max_prob_2
+        final_label = out_label_2
+    elif(tempmaxprob < max_prob_3 and max_prob_3 > max_prob_2 and max_prob_3 > max_prob_1):
+        tempmaxprob = max_prob_3
+        final_label = out_label_3
+    
+   
+    return final_label , tempmaxprob
 
 def lambda_handler(event, context):
     # Parse input
@@ -331,13 +392,15 @@ def lambda_handler(event, context):
     if(len(keyFrames)==0):
         keyFrames.extend(finalVectors)
         keyCheckPoints.extend(checkPoints)
-        # label = predict(keyFrames
+        set0, set1, set2, set3 = preprocessData(keyFrames)
+        label , prob = predict(set0, set1, set2, set3)
         return {
             "statusCode": 200,
             "body": json.dumps({
                 "keyFrames" : keyFrames ,
                 "keyCheckPoints": keyCheckPoints,
-                "label" : label
+                "label" : label,
+                "prob" : prob
             }),
         }
     if (checkPreviousFrame(checkPoints, keyCheckPoints)):
@@ -346,13 +409,15 @@ def lambda_handler(event, context):
             keyFrames = recalculateFrames(keyFrames)
         keyFrames.extend(finalVectors)
         keyCheckPoints.extend(checkPoints)
-        # label = predict(keyFrames)
+        set0, set1, set2, set3 = preprocessData(keyFrames)
+        label , prob = predict(set0, set1, set2, set3)
         return {
             "statusCode": 200,
             "body": json.dumps({
                 "keyFrames" : keyFrames ,
                 "keyCheckPoints": keyCheckPoints,
-                "label" : label
+                "label" : label,
+                "prob" : prob
             }),
         }
         
@@ -362,6 +427,7 @@ def lambda_handler(event, context):
             "body": json.dumps({
                 "keyFrames" : keyFrames ,
                 "keyCheckPoints": keyCheckPoints,
-                "label" : label
+                "label" : label,
+                "prob" : 0
             }),
         }
