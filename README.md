@@ -16,7 +16,28 @@ Before deploying the CoreAPI, update the following in its [app.py](./CoreAPI/hel
 >ENDPOINT_NAME_LEFT</br>
 >MediapipeAPI Lambda Function Name
 
-### Giving Amazon Sagemaker Permssions to the CoreAPI
+## Giving Permssions to the CoreAPI
+
+In the **IAM** Console, create a new policy and give it a suitable name, for example: `MediapipeAPIPolicy`. Edit the policy and add the following to it:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowAuroraToExampleFunction",
+            "Effect": "Allow",
+            "Action": "lambda:InvokeFunction",
+            "Resource": "<YOUR MEDIAPIPE API LAMBDA FUNCTION ARN>"
+        }
+    ]
+}
+```
+
+Replace the resource with the ARN of your Mediapipe API Lambda Function.
 
 Head over to the **AWS Lambda** Console, find your CoreAPI lambda function. Under the **Permissions** tab, click on the role.
-In the **IAM** Console, add a **AmazonSagemakerFullAccess** policy to your function role.
+In the **IAM** Console, add the following policies to it:
+-  **AWSLambdaBasicExecutionRole** policy
+-  **AmazonSagemakerFullAccess** policy
+-  **MediapipeAPIPolicy** policy
