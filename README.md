@@ -41,3 +41,7 @@ In the **IAM** Console, add the following policies to it:
 -  **AWSLambdaBasicExecutionRole** policy
 -  **AmazonSagemakerFullAccess** policy
 -  **MediapipeAPIPolicy** policy
+
+## Integrations
+
+These API's can be integrated into a mobile app simply by invoking the CoreAPI Lambda function.
